@@ -34,7 +34,7 @@ mov ecx, input_x_msg
 mov edx, input_x_msg_len
 int 80h
 
-call scan_int;
+call scan_int
 mov [x], eax
 
 mov eax, 4
@@ -43,7 +43,7 @@ mov ecx, input_y_msg
 mov edx, input_y_msg_len
 int 80h
 
-call scan_int;
+call scan_int
 mov [y], eax
 
 mov eax, [x]
@@ -60,7 +60,7 @@ int 80h
 
 mov eax, [sum]
 push eax
-call print_int;
+call print_int
 
 mov eax, 4
 mov ebx, 1
@@ -81,36 +81,31 @@ int 80h
 
 mov eax, [mult]
 push eax
-call print_int;
+call print_int
 
 mov eax, 1
 int 80h
 
-call print_int; напечатать int, который находится в вершине стека
-; в стандартный поток вывода
-; "callfunc" эквивалентно
-;    push<адрес_следующей_инструкции>;
-;    jmpfunc
+call print_int
 
-mov eax, 1; Эти три строчки эквиваленты exit(0)
-mov ebx, 0;
-int 0x80;
+mov eax, 1
+mov ebx, 0
+int 0x80
 
 scan_int:
-    ; читаем до 20 байт в buffer
-    mov eax, 3          ; sys_read
-    mov ebx, 1          ; stdin
+
+    mov eax, 3
+    mov ebx, 1
     mov ecx, buffer
     mov edx, 20
-    int 0x80            ; eax = количество прочитанных байт
+    int 0x80
 
-    ; ecx будет указателем на buffer
     mov ecx, buffer
-    xor eax, eax        ; eax = 0 (будем накапливать число)
+    xor eax, eax
 
 .parse:
     mov bl, [ecx]
-    cmp bl, 0x0A        ; '\n'?
+    cmp bl, 0x0A
     je .done
 
     mov edx, 10
@@ -124,54 +119,41 @@ scan_int:
 .done:
     ret
 
-print_int:; функция печати целого числа в stdout
-; аргумент (4-байтовое целое число)
-; находится в вершине стека
-; ebp содержит адрес начала stackframe
-; esp содержит адрес вершины стека
-; esp<ebp, то есть вершина имеет меньший адрес
-; в начале по адресам (ebp-4, ebp-3, ebp -2, ebp -1) лежат
-; четыре байта целого числа, которое нам передали
-; в качестве аргумента
+print_int:
 
-push ebp; поместим в стек адрес начала стека
-; этот push автоматически делает esp -= 4
-mov ebp, esp; теперь ebp равно esp
+push ebp
+mov ebp, esp
 
-; аргументы находятся по адресу ebp + 8
-mov ecx, [ebp+8]; значение переданного нам целого числа поместим в ecx
+mov ecx, [ebp+8]
 
-xor edx, edx; обнулим edx
-mov esi, 10; на 10 мы будем делить.
+xor edx, edx
+mov esi, 10
 
-mov edi, 18; символы-цифры нашего числа мы будем помещать
-; поадресам buffer + 17, buffer+16, buffer+15, ...
+mov edi, 18
 
-mov byte [buffer + 18], 0xA; 19-й и 20-й символы — это перенос строчки
-mov byte [buffer + 19], 0; и символ конца строки
+mov byte [buffer + 18], 0xA
+mov byte [buffer + 19], 0
 
 .loop:
-mov eax, ecx;
-xor edx, edx; данные четыре строки дают
-div esi;   ecx = ecx / 10
-mov ecx, eax;
+mov eax, ecx
+xor edx, edx
+div esi
+mov ecx, eax
 
 
-add edx, '0'; '0' ассемблером интерпретируется как ASCII код символа '0'
+add edx, '0'
 dec edi
 mov byte [buffer+edi], dl
 cmp ecx, 0
 jne .loop
 
-mov eax, 4        ; эквивалентно write( 1, buffer + edi, 19 - edi )
+mov eax, 4
 mov ebx, 1
-mov ecx, buffer   ; можнокороче — lea ecx, [buffer+edi]
+mov ecx, buffer
 add ecx, edi
 mov edx, 19
 sub edx, edi
 int 0x80
 
-leave; эквивалентноmovesp, ebp
-;               popebp
-ret; эквивалентно  pop IP
-;
+leave
+ret
