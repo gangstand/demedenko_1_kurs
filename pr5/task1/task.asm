@@ -47,7 +47,7 @@ encrypt_loop:
 
    mov bl, [key + edx]
 
-   mov al, [esi]
+   mov al, [esi]t
    xor al, bl
    mov [edi], al
 
